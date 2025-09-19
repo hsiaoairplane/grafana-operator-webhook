@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **Grafana Operator CR Webhook** is a Kubernetes admission webhook designed to optimize the handling of ArgoCD `Application` resources by filtering out unnecessary updates to reduce API server load and ETCD database growth.
+The **Grafana Operator CR Webhook** is a Kubernetes admission webhook designed to optimize the handling of Grafana Operator `GrafanaDashboard` resources by filtering out unnecessary updates to reduce API server load and ETCD database growth.
 
 ### Benefits
 

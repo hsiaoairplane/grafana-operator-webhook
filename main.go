@@ -25,7 +25,7 @@ var (
 	// Create a histogram metric to track the duration of requests in milliseconds
 	requestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "argocd_webhook_request_duration",
+			Name:    "grafana_operator_webhook_request_duration",
 			Help:    "Duration of requests to the webhook server in milliseconds.",
 			Buckets: prometheus.DefBuckets,
 		},
@@ -35,7 +35,7 @@ var (
 	// Create a counter for tracking applications with changes vs. no changes
 	processedTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "argocd_webhook_processed_total",
+			Name: "grafana_operator_webhook_processed_total",
 			Help: "Total number of Applications processed by the webhook, differentiated by whether changes were detected.",
 		},
 		[]string{"change"}, // Label is now "change" with values "true" and "false"
@@ -81,7 +81,7 @@ func handleAdmissionReview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Only process UPDATE requests for Application CR
-	if admissionReviewReq.Request.Operation != admissionv1.Update || admissionReviewReq.Request.Kind.Kind != "Application" {
+	if admissionReviewReq.Request.Operation != admissionv1.Update || admissionReviewReq.Request.Kind.Kind != "GrafanaDashboard" {
 		sendResponse(w, admissionReviewResp)
 		return
 	}
@@ -105,8 +105,8 @@ func handleAdmissionReview(w http.ResponseWriter, r *http.Request) {
 	cleanupMetadata(newObj)
 
 	// Remove reconciledAt from both old and new objects
-	removeReconciledAt(oldObj)
-	removeReconciledAt(newObj)
+	removeLastResync(oldObj)
+	removeLastResync(newObj)
 
 	metadataChanged := !reflect.DeepEqual(oldObj["metadata"], newObj["metadata"])
 	specChanged := !reflect.DeepEqual(oldObj["spec"], newObj["spec"])
@@ -154,10 +154,10 @@ func cleanupMetadata(obj map[string]interface{}) {
 	}
 }
 
-// Helper function to remove reconciledAt from an object
-func removeReconciledAt(obj map[string]interface{}) {
+// Helper function to remove lastResync from an object
+func removeLastResync(obj map[string]interface{}) {
 	if status, exists := obj["status"].(map[string]interface{}); exists {
-		delete(status, "reconciledAt")
+		delete(status, "lastResync")
 	}
 }
 

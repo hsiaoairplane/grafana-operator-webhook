@@ -11,10 +11,10 @@ webhooks:
         namespace: grafana-operator
         path: /validate 
     rules:
-      - apiGroups: ["argoproj.io"]
-        apiVersions: ["v1alpha1"]
+      - apiGroups: ["grafana.integreatly.org"]
+        apiVersions: ["v1beta1"]
         operations: ["UPDATE"]
-        resources: ["applications"]
+        resources: ["grafanadashboards"]
     failurePolicy: Ignore
     sideEffects: None
     timeoutSeconds: 3

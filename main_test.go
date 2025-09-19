@@ -135,10 +135,10 @@ func TestHandleAdmissionReview_StatusReconciledAtChange(t *testing.T) {
 		},
 		Request: &admissionv1.AdmissionRequest{
 			UID:       "test-uid-status-change",
-			Kind:      metav1.GroupVersionKind{Kind: "Application"},
+			Kind:      metav1.GroupVersionKind{Kind: "GrafanaDashboard"},
 			Operation: admissionv1.Update,
-			OldObject: runtime.RawExtension{Raw: []byte(`{"metadata": {}, "spec": {}, "status": {"reconciledAt": "2024-03-20T12:00:00Z"}}`)},
-			Object:    runtime.RawExtension{Raw: []byte(`{"metadata": {}, "spec": {}, "status": {"reconciledAt": "2024-03-21T12:00:00Z"}}`)},
+			OldObject: runtime.RawExtension{Raw: []byte(`{"metadata": {}, "spec": {}, "status": {"lastResync": "2024-03-20T12:00:00Z"}}`)},
+			Object:    runtime.RawExtension{Raw: []byte(`{"metadata": {}, "spec": {}, "status": {"lastResync": "2024-03-21T12:00:00Z"}}`)},
 		},
 	}
 

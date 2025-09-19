@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: webhook-server
-          image: ghcr.io/hsiaoairplane/grafana-operator-webhook:v0.2.0
+          image: ghcr.io/hsiaoairplane/grafana-operator-webhook:v0.0.1
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
