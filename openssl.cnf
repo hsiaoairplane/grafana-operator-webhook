@@ -1,0 +1,20 @@
+[ req ]
+default_bits       = 2048
+default_keyfile    = privkey.pem
+distinguished_name = req_distinguished_name
+x509_extensions    = v3_req
+prompt = no
+
+[ req_distinguished_name ]
+C  = TW
+ST = Taiwan
+L  = Taiwan
+O  = hsiaoairplane
+CN = webhook.grafana-operator.svc  # Common Name for the certificate
+
+[ v3_req ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = webhook.grafana-operator.svc
+DNS.2 = webhook.grafana-operator.svc.cluster.local

@@ -1,0 +1,42 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-server
+  namespace: grafana-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook-server
+  template:
+    metadata:
+      labels:
+        app: webhook-server
+    spec:
+      containers:
+        - name: webhook-server
+          image: ghcr.io/hsiaoairplane/grafana-operator-webhook:v0.2.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8443
+          volumeMounts:
+            - name: tls-certs
+              mountPath: "/certs"
+              readOnly: true
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: webhook-tls-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook
+  namespace: grafana-operator
+spec:
+  ports:
+    - port: 443
+      targetPort: 8443
+  selector:
+    app: webhook-server
