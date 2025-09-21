@@ -87,8 +87,8 @@ func TestHandleAdmissionReview_StatusSyncRevisionChange(t *testing.T) {
 			UID:       "test-uid-status-sync-revision-change",
 			Kind:      metav1.GroupVersionKind{Kind: "Application"},
 			Operation: admissionv1.Update,
-			OldObject: runtime.RawExtension{Raw: []byte(`{"metadata": {}, "spec": {}, "status": {"sync": {"revision": "abc123"}}}`)},
-			Object:    runtime.RawExtension{Raw: []byte(`{"metadata": {}, "spec": {}, "status": {"sync": {"revision": "def456"}}}`)},
+			OldObject: runtime.RawExtension{Raw: []byte(`{"metadata": {}, "spec": {}, "status": {"uid": "abc123"}}`)},
+			Object:    runtime.RawExtension{Raw: []byte(`{"metadata": {}, "spec": {}, "status": {"uid": "def456"}}`)},
 		},
 	}
 
