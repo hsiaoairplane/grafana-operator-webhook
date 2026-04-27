@@ -1,5 +1,5 @@
 # Use a minimal base image with Go installed
-FROM golang:1.25 AS builder
+FROM golang:1.26 AS builder
 
 # Set the working directory
 WORKDIR /app
@@ -8,7 +8,16 @@ WORKDIR /app
 COPY . .
 
 # Build the Go binary
-RUN go build -o webhook main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o webhook main.go
+
+# Use a minimal final image
+FROM gcr.io/distroless/static-debian12:nonroot
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/webhook /app/webhook
 
 # Expose port for webhook server
 EXPOSE 8443
