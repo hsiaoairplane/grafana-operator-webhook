@@ -92,6 +92,23 @@ func TestHandleAdmissionReview_NilRequest(t *testing.T) {
 	}
 }
 
+func TestHandleAdmissionReview_BodyTooLarge(t *testing.T) {
+	// A body exceeding maxRequestBodyBytes must be rejected rather than
+	// read fully into memory.
+	oversized := bytes.Repeat([]byte("a"), int(maxRequestBodyBytes)+1)
+	req := httptest.NewRequest(http.MethodPost, "/validate", bytes.NewReader(oversized))
+	w := httptest.NewRecorder()
+
+	handleAdmissionReview(w, req)
+
+	resp := w.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusRequestEntityTooLarge {
+		t.Errorf("Expected status code 413, got %d", resp.StatusCode)
+	}
+}
+
 func TestHandleAdmissionReview_StatusSyncRevisionChange(t *testing.T) {
 	reqBody := admissionv1.AdmissionReview{
 		TypeMeta: metav1.TypeMeta{

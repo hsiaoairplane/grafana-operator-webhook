@@ -21,6 +21,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// maxRequestBodyBytes caps the size of an incoming AdmissionReview body to
+// guard against memory exhaustion from oversized or malicious requests. An
+// AdmissionReview carries both the old and new object, and Grafana dashboards
+// can be large, so the default is generous; it is configurable via the
+// --max-request-body-bytes flag.
+var maxRequestBodyBytes int64 = 16 << 20 // 16 MiB
+
 var (
 	// Create a histogram metric to track the duration of requests in milliseconds
 	requestDuration = prometheus.NewHistogramVec(
@@ -56,9 +63,10 @@ func handleAdmissionReview(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
 	var admissionReviewReq admissionv1.AdmissionReview
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "failed to read request body", http.StatusInternalServerError)
+		http.Error(w, "failed to read request body", http.StatusRequestEntityTooLarge)
 		return
 	}
 
@@ -227,6 +235,7 @@ func printDifferences(owner string, oldMap, newMap map[string]interface{}) {
 func main() {
 	port := flag.String("port", "8443", "Webhook server port")
 	logLevel := flag.String("log-level", "info", "Log level (debug, info, warn, error, fatal, panic)")
+	flag.Int64Var(&maxRequestBodyBytes, "max-request-body-bytes", maxRequestBodyBytes, "Maximum accepted request body size in bytes")
 	flag.Parse()
 
 	addr := fmt.Sprintf(":%s", *port)
