@@ -231,8 +231,12 @@ func main() {
 
 	addr := fmt.Sprintf(":%s", *port)
 	srv := &http.Server{
-		Addr:    addr,
-		Handler: http.DefaultServeMux,
+		Addr:              addr,
+		Handler:           http.DefaultServeMux,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	level, err := log.ParseLevel(*logLevel)
