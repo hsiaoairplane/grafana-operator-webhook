@@ -77,6 +77,21 @@ func TestWebhookOperationHandler(t *testing.T) {
 	}
 }
 
+func TestHandleAdmissionReview_NilRequest(t *testing.T) {
+	// An AdmissionReview body without a "request" field must not panic the server.
+	req := httptest.NewRequest(http.MethodPost, "/validate", bytes.NewReader([]byte(`{}`)))
+	w := httptest.NewRecorder()
+
+	handleAdmissionReview(w, req)
+
+	resp := w.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected status code 400, got %d", resp.StatusCode)
+	}
+}
+
 func TestHandleAdmissionReview_StatusSyncRevisionChange(t *testing.T) {
 	reqBody := admissionv1.AdmissionReview{
 		TypeMeta: metav1.TypeMeta{
