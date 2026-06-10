@@ -92,6 +92,25 @@ func TestHandleAdmissionReview_NilRequest(t *testing.T) {
 	}
 }
 
+func TestHandleAdmissionReview_MethodNotAllowed(t *testing.T) {
+	// Only POST is accepted; any other method must be rejected.
+	for _, method := range []string{http.MethodGet, http.MethodPut, http.MethodDelete} {
+		t.Run(method, func(t *testing.T) {
+			req := httptest.NewRequest(method, "/validate", nil)
+			w := httptest.NewRecorder()
+
+			handleAdmissionReview(w, req)
+
+			resp := w.Result()
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusMethodNotAllowed {
+				t.Errorf("Expected status code 405, got %d", resp.StatusCode)
+			}
+		})
+	}
+}
+
 func TestHandleAdmissionReview_BodyTooLarge(t *testing.T) {
 	// A body exceeding maxRequestBodyBytes must be rejected rather than
 	// read fully into memory.
