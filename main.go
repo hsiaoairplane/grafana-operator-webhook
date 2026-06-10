@@ -22,8 +22,11 @@ import (
 )
 
 // maxRequestBodyBytes caps the size of an incoming AdmissionReview body to
-// guard against memory exhaustion from oversized or malicious requests.
-const maxRequestBodyBytes = 3 << 20 // 3 MiB
+// guard against memory exhaustion from oversized or malicious requests. An
+// AdmissionReview carries both the old and new object, and Grafana dashboards
+// can be large, so the default is generous; it is configurable via the
+// --max-request-body-bytes flag.
+var maxRequestBodyBytes int64 = 16 << 20 // 16 MiB
 
 var (
 	// Create a histogram metric to track the duration of requests in milliseconds
@@ -232,6 +235,7 @@ func printDifferences(owner string, oldMap, newMap map[string]interface{}) {
 func main() {
 	port := flag.String("port", "8443", "Webhook server port")
 	logLevel := flag.String("log-level", "info", "Log level (debug, info, warn, error, fatal, panic)")
+	flag.Int64Var(&maxRequestBodyBytes, "max-request-body-bytes", maxRequestBodyBytes, "Maximum accepted request body size in bytes")
 	flag.Parse()
 
 	addr := fmt.Sprintf(":%s", *port)

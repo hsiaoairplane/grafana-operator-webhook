@@ -95,7 +95,7 @@ func TestHandleAdmissionReview_NilRequest(t *testing.T) {
 func TestHandleAdmissionReview_BodyTooLarge(t *testing.T) {
 	// A body exceeding maxRequestBodyBytes must be rejected rather than
 	// read fully into memory.
-	oversized := bytes.Repeat([]byte("a"), maxRequestBodyBytes+1)
+	oversized := bytes.Repeat([]byte("a"), int(maxRequestBodyBytes)+1)
 	req := httptest.NewRequest(http.MethodPost, "/validate", bytes.NewReader(oversized))
 	w := httptest.NewRecorder()
 
