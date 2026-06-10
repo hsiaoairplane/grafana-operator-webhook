@@ -62,6 +62,12 @@ func handleAdmissionReview(w http.ResponseWriter, r *http.Request) {
 	// Start measuring the request duration
 	start := time.Now()
 
+	// The apiserver always sends admission requests as POST; reject anything else.
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	var admissionReviewReq admissionv1.AdmissionReview
 	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 	body, err := io.ReadAll(r.Body)
