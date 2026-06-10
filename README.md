@@ -6,7 +6,7 @@ The **Grafana Operator CR Webhook** is a Kubernetes admission webhook designed t
 
 ### Benefits
 
-1. **Reduces API Server Load**: Prevents frequet PUT API calls.
+1. **Reduces API Server Load**: Prevents frequent PUT API calls.
 2. **Optimizes ETCD Storage**: Minimizes unnecessary revision history storage in ETCD.
 
 ## Deployment

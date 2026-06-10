@@ -25,8 +25,8 @@ var (
 	// Create a histogram metric to track the duration of requests in milliseconds
 	requestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "grafana_operator_webhook_request_duration",
-			Help:    "Duration of requests to the webhook server in milliseconds.",
+			Name:    "grafana_operator_webhook_request_duration_seconds",
+			Help:    "Duration of requests to the webhook server in seconds.",
 			Buckets: prometheus.DefBuckets,
 		},
 		[]string{"change"}, // Label is now "change" with values "true" and "false"
@@ -65,6 +65,11 @@ func handleAdmissionReview(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &admissionReviewReq)
 	if err != nil {
 		http.Error(w, "failed to unmarshal request", http.StatusBadRequest)
+		return
+	}
+
+	if admissionReviewReq.Request == nil {
+		http.Error(w, "admission review request is empty", http.StatusBadRequest)
 		return
 	}
 
@@ -241,7 +246,7 @@ func main() {
 
 	// Webhook handler
 	http.HandleFunc("/validate", handleAdmissionReview)
-	log.Info("Starting webhook server on :8443...")
+	log.Infof("Starting webhook server on %s...", addr)
 
 	go func() {
 		if err := srv.ListenAndServeTLS("/certs/tls.crt", "/certs/tls.key"); err != nil && err != http.ErrServerClosed {
