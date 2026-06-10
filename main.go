@@ -21,6 +21,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// maxRequestBodyBytes caps the size of an incoming AdmissionReview body to
+// guard against memory exhaustion from oversized or malicious requests.
+const maxRequestBodyBytes = 3 << 20 // 3 MiB
+
 var (
 	// Create a histogram metric to track the duration of requests in milliseconds
 	requestDuration = prometheus.NewHistogramVec(
@@ -56,9 +60,10 @@ func handleAdmissionReview(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
 	var admissionReviewReq admissionv1.AdmissionReview
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "failed to read request body", http.StatusInternalServerError)
+		http.Error(w, "failed to read request body", http.StatusRequestEntityTooLarge)
 		return
 	}
 
