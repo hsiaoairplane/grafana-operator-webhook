@@ -11,11 +11,11 @@ vet:
 
 .PHONY: test
 test:
-	go test ./...
+	go test -race ./...
 
 .PHONY: build
 build:
-	go build -o grafana-operator-webhook -race -v .
+	go build -o grafana-operator-webhook -v .
 
 .PHONY: clean
 clean:
