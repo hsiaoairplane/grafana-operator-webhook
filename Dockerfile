@@ -4,6 +4,10 @@ FROM golang:1.26 AS builder
 # Set the working directory
 WORKDIR /app
 
+# Download dependencies first so this layer is cached unless go.mod/go.sum change
+COPY go.mod go.sum ./
+RUN go mod download
+
 # Copy the Go source code
 COPY . .
 

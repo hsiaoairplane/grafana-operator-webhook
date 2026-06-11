@@ -181,9 +181,17 @@ func removeLastResync(obj map[string]interface{}) {
 }
 
 func sendResponse(w http.ResponseWriter, admissionReviewResp admissionv1.AdmissionReview) {
-	responseBytes, _ := json.Marshal(admissionReviewResp)
+	responseBytes, err := json.Marshal(admissionReviewResp)
+	if err != nil {
+		log.Errorf("Failed to marshal admission response: %v", err)
+		http.Error(w, "failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(responseBytes)
+	if _, err := w.Write(responseBytes); err != nil {
+		log.Errorf("Failed to write admission response: %v", err)
+	}
 }
 
 // Function to record the request duration in milliseconds
