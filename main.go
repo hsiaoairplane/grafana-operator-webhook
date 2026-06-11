@@ -28,24 +28,33 @@ import (
 // --max-request-body-bytes flag.
 var maxRequestBodyBytes int64 = 16 << 20 // 16 MiB
 
+// Possible values for the "outcome" metric label, covering every request path.
+const (
+	outcomeChanged   = "changed"   // GrafanaDashboard update with a real diff (allowed)
+	outcomeUnchanged = "unchanged" // GrafanaDashboard update with no diff (denied)
+	outcomeSkipped   = "skipped"   // request the webhook does not act on (passed through)
+	outcomeError     = "error"     // request rejected before a decision could be made
+)
+
 var (
-	// Create a histogram metric to track the duration of requests in milliseconds
+	// Histogram tracking the duration of every request, labeled by outcome.
 	requestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "grafana_operator_webhook_request_duration_seconds",
-			Help:    "Duration of requests to the webhook server in seconds.",
+			Help:    "Duration of requests to the webhook server in seconds, labeled by outcome.",
 			Buckets: prometheus.DefBuckets,
 		},
-		[]string{"change"}, // Label is now "change" with values "true" and "false"
+		[]string{"outcome"},
 	)
 
-	// Create a counter for tracking applications with changes vs. no changes
+	// Counter tracking every request handled by the webhook, labeled by outcome
+	// (changed, unchanged, skipped, error).
 	processedTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "grafana_operator_webhook_processed_total",
-			Help: "Total number of Applications processed by the webhook, differentiated by whether changes were detected.",
+			Help: "Total number of requests handled by the webhook, labeled by outcome.",
 		},
-		[]string{"change"}, // Label is now "change" with values "true" and "false"
+		[]string{"outcome"},
 	)
 )
 
@@ -59,8 +68,18 @@ func init() {
 }
 
 func handleAdmissionReview(w http.ResponseWriter, r *http.Request) {
-	// Start measuring the request duration
+	// Start measuring the request duration.
 	start := time.Now()
+
+	// Default to "error"; it is overwritten once a non-error outcome is
+	// determined, so every early return is recorded without per-path
+	// bookkeeping. The deferred call guarantees both metrics are emitted on
+	// every code path.
+	outcome := outcomeError
+	defer func() {
+		requestDuration.WithLabelValues(outcome).Observe(time.Since(start).Seconds())
+		processedTotal.WithLabelValues(outcome).Inc()
+	}()
 
 	// The apiserver always sends admission requests as POST; reject anything else.
 	if r.Method != http.MethodPost {
@@ -99,8 +118,9 @@ func handleAdmissionReview(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	// Only process UPDATE requests for Application CR
+	// Only process UPDATE requests for GrafanaDashboard; pass anything else through.
 	if admissionReviewReq.Request.Operation != admissionv1.Update || admissionReviewReq.Request.Kind.Kind != "GrafanaDashboard" {
+		outcome = outcomeSkipped
 		sendResponse(w, admissionReviewResp)
 		return
 	}
@@ -134,15 +154,13 @@ func handleAdmissionReview(w http.ResponseWriter, r *http.Request) {
 	if !metadataChanged && !specChanged && !statusChanged {
 		log.Debug("No significant differences found.")
 
+		outcome = outcomeUnchanged
 		admissionReviewResp.Response.Allowed = false
 		admissionReviewResp.Response.Result = &metav1.Status{
 			Status:  "Success",
 			Message: "Update successful.",
 			Code:    http.StatusOK,
 		}
-
-		// Increment the counter for unchanged apps
-		processedTotal.WithLabelValues("false").Inc()
 	} else {
 		if metadataChanged {
 			printMetadataDifferences(oldObj, newObj)
@@ -153,16 +171,11 @@ func handleAdmissionReview(w http.ResponseWriter, r *http.Request) {
 		if statusChanged {
 			printStatusDifferences(oldObj, newObj)
 		}
+		outcome = outcomeChanged
 		admissionReviewResp.Response.Allowed = true
-
-		// Increment the counter for changed apps
-		processedTotal.WithLabelValues("true").Inc()
 	}
 
 	sendResponse(w, admissionReviewResp)
-
-	// Record the request duration
-	recordRequestDuration(fmt.Sprintf("%t", metadataChanged || specChanged || statusChanged), start)
 }
 
 // Function to remove metadata.managedFields and metadata.generation
@@ -192,12 +205,6 @@ func sendResponse(w http.ResponseWriter, admissionReviewResp admissionv1.Admissi
 	if _, err := w.Write(responseBytes); err != nil {
 		log.Errorf("Failed to write admission response: %v", err)
 	}
-}
-
-// Function to record the request duration in milliseconds
-func recordRequestDuration(status string, start time.Time) {
-	duration := time.Since(start).Seconds()
-	requestDuration.WithLabelValues(status).Observe(duration)
 }
 
 // Function to log metadata differences
